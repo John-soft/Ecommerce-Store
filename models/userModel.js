@@ -1,4 +1,5 @@
-const {Schema, model} = require('mongoose')
+const {Schema, model, Types} = require('mongoose')
+const bcrypt = require('bcrypt')
 
 // Declare the Schema of the Mongo model
 var userSchema = new Schema({
@@ -24,9 +25,38 @@ var userSchema = new Schema({
     password:{
         type:String,
         required:[true, 'Please enter password'],
-        minlength:[4, 'Passwords should be more than 6 characters']
+        minlength:[4, 'Passwords should be more than 4 characters'],
+        
     },
-});
+    role: {
+        type: String,
+        default: 'user'
+    },
+    cart: {
+        type: Array,
+        default: []
+    },
+    address: [{
+        type: Types.ObjectId, 
+        ref: 'Address',
+
+    }],
+    wishlist: [{
+        type: Types.ObjectId,
+        ref: 'Product',
+
+    }],
+},{timestamps: true});
+
+
+userSchema.pre('save', async function(){
+    const salt = await bcrypt.genSalt(10)
+    this.password = await bcrypt.hash(this.password, salt)
+})
+
+userSchema.methods.isPasswordCorrect = async function(enteredPassword){
+    return await bcrypt.compare(enteredPassword, this.password)
+}
 
 //Export the model
 const User = model('User', userSchema);
