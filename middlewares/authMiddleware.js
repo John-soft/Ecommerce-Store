@@ -21,7 +21,20 @@ const authProtect = asyncWrapper(async(req, res, next) => {
     } catch (error) {
         throw new Error('Authentication Failed')
     }
-    
+
 })
 
-module.exports = authProtect
+const isAdmin = asyncWrapper(async(req, res, next) => {
+    const {email} = req.user
+    const user = await User.findOne(email)
+    if (user.role !== 'admin'){
+    throw new Error('You are not an admin')
+    }
+    next()
+
+})
+
+module.exports = {
+    authProtect,
+    isAdmin
+}

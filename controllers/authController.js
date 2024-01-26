@@ -1,13 +1,58 @@
 const User = require('../models/userModel')
 const {StatusCodes} = require('http-status-codes')
 const asyncWrapper = require('express-async-handler')
-const generateToken = require('../utils/token')
+const generateToken = require('../config/token')
+const validateMongoId = require('../utils/validateMongoId')
+const generateRefreshToken = require('../config/refreshToken')
+const jwt = require('jsonwebtoken')
+
+//handle refresh token
+const handleRefreshToken = asyncWrapper(async (req, res) => {
+    const cookie = req.cookies
+    //console.log(cookie);
+    if (!cookie.refreshToken) throw new Error('No refresh token in cookies')
+    const refreshToken = cookie.refreshToken
+    //console.log(refreshToken);
+    const user = await User.findOne({refreshToken})
+    if (!user) throw new Error('Refresh token is missing')
+    jwt.verify(refreshToken, process.env.SECRET_JWT, (err, decoded) => {
+
+        if (err || user.id !== decoded.id) throw new Error('There is something wrong with the refresh token')
+        const accessToken = generateToken(user._id)
+    res.json({accessToken})
+    })
+})
+
+//handle logout functionality
+const logout = asyncWrapper(async (req, res) => {
+    const cookie = req.cookies
+    if (!cookie.refreshToken) throw new Error('No refresh token in cookies')
+    const refreshToken = cookie.refreshToken
+const user = await User.findOne({refreshToken})
+if (!user) {
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: true,
+    })
+    return res.sendStatus(204)
+}
+    await User.findOneAndUpdate({refreshToken}, {
+        refreshToken: ""
+    })
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: true,
+    })
+    return res.sendStatus(204)
+
+})
+ 
 
 const register = asyncWrapper( async (req, res, next) => {
     const user = await User.create(req.body)
-    const token = generateToken(user._id)
+    //const token = generateToken(user._id)
     res.status(StatusCodes.CREATED).json({
-       token,    
+       //token,    
        user
    })
 })
@@ -18,8 +63,14 @@ const login = asyncWrapper(async (req,res,next) => {
     const user = await User.findOne({email})
     const token = generateToken(user._id)
     if (user && (await user.isPasswordCorrect(password))) {
+        const refreshToken = await generateRefreshToken(user._id)
+        const updatedUser = await User.findByIdAndUpdate(user.id, {refreshToken: refreshToken},{new: true})
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            maxAge: 72 * 60 * 60 * 1000
+        })
         res.json({
-            token,
+            token,      
             user
         })
     }else{
@@ -40,6 +91,7 @@ const getAllUsers = asyncWrapper(async (req,res) => {
 
 const getUser = asyncWrapper(async (req, res) => {
     const {id} = req.params
+    validateMongoId(id)
     const user = await User.findById(id)
     if (!user) {
         throw new Error('User with the given ID does not exist')
@@ -53,7 +105,8 @@ const getUser = asyncWrapper(async (req, res) => {
 
 
 const updateUser =  asyncWrapper(async(req, res) => {
-    const id = req.params.id 
+    const id = req.params.id
+    validateMongoId(id)
     const updatedUser = await User.findByIdAndUpdate(id, req.body, {runValidators: true, new: true})
     if (!updatedUser) {
         throw new Error('User with the given ID does not exist')
@@ -66,6 +119,7 @@ const updateUser =  asyncWrapper(async(req, res) => {
 
 const deleteUser =  asyncWrapper(async(req, res) => {
     const id = req.params.id 
+    validateMongoId(id)
     const deletedUser = await User.findByIdAndDelete(id)
     if (!deletedUser) {
         throw new Error('User with the given ID does not exist')
@@ -74,12 +128,36 @@ const deleteUser =  asyncWrapper(async(req, res) => {
         messgae: "Data deleted successfully"
     })
 })
+
+const blockUser = asyncWrapper(async (req, res,next) => {
+    const id = req.params.id
+    validateMongoId(id)
+    const blockedUser = await User.findByIdAndUpdate(id, {isBlocked: true}, {new: true})
+    res.status(StatusCodes.ACCEPTED).json({
+        message: "User blocked",
+        blockedUser
+    })
+})
  
+
+const unblockUser = asyncWrapper(async (req, res,next) => {
+    const id = req.params.id
+    validateMongoId(id)
+    const unblockedUser = await User.findByIdAndUpdate(id, {isBlocked: false}, {new: true})
+    res.status(StatusCodes.ACCEPTED).json({
+        message:"User unblocked",
+        unblockedUser
+    })
+})
 module.exports = {
     register,
     login,
     getAllUsers,
     getUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    blockUser,
+    unblockUser,
+    handleRefreshToken,
+    logout
 }
