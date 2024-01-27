@@ -48,10 +48,6 @@ const getAllProducts = asyncWrapper(async (req, res) => {
             }
         }
 
-
-
-
-
     let product = await query
     res.json({product})
   
