@@ -12,7 +12,8 @@
     handleRefreshToken,
     logout,
     updatePassword,
-    forgotPasswordToken
+    forgotPasswordToken,
+    resetPassword
     
     } = require('../controllers/authController')
 
@@ -20,6 +21,7 @@ const {authProtect, isAdmin} = require('../middlewares/authMiddleware')
 router.route('/register').post(register)
 router.route('/login').post(login)
 router.route('/forgotPassword').post(forgotPasswordToken)
+router.route('/resetPassword/:token').patch(resetPassword)
 router.route('/getUsers').get( authProtect,getAllUsers)
 router.route('/refresh').get(handleRefreshToken)
 router.route('/logout').get(logout)
