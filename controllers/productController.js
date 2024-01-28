@@ -107,11 +107,61 @@ const addToWishlist = asyncWrapper(async (req, res) => {
 
 })
 
+
+///explain more ------- try to understand
+const rating = asyncWrapper(async (req, res) => {
+    const {_id} = req.user
+    const {star, prodId, comment} = req.body
+
+    const product = await Product.findById(prodId)
+    const alreadyRated = product.ratings.find((userId) => userId.postedBy.toString() === _id.toString())
+    if (alreadyRated) {
+        const updateRating = await Product.findOneAndUpdate(
+            {
+            ratings: { $elemMatch: alreadyRated }, 
+            },
+            {
+            $set: { "ratings.$.star": star , "ratings.$.comment": comment  }
+            },
+            {
+                new: true
+            }
+        )
+    }else{
+        const rateProduct = await Product.findByIdAndUpdate(
+            prodId, {
+                $push: {ratings: {
+                    star: star,
+                    comment: comment,
+                    postedBy: _id
+                }}
+            },
+            {
+                new: true
+            }
+        )
+    }
+
+    const getAllRatings = await Product.findById(prodId)
+    let totalRatings = getAllRatings.ratings.length
+    let ratingSum = getAllRatings.ratings
+        .map((item) => item.star)
+        .reduce((a, b) => a + b, 0)
+    let actualRating = Math.round(ratingSum/totalRatings)
+    let finalProductRating = await Product.findByIdAndUpdate(prodId, {
+        totalRatings: actualRating
+    },
+    {new: true}
+    )
+    res.json(finalProductRating)
+})
+
 module.exports = {
     createProduct,
     getAllProducts,
     getProduct,
     updateProduct,
     deleteProduct,
-    addToWishlist
+    addToWishlist,
+    rating
 }

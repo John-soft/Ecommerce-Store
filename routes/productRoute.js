@@ -8,6 +8,7 @@ const {
     updateProduct,
     deleteProduct,
     addToWishlist,
+    rating,
     } = require('../controllers/productController')
 
 router.route('/')
@@ -15,6 +16,8 @@ router.route('/')
     .get(getAllProducts)
 router.route('/wishlist')
     .patch(authProtect, addToWishlist)
+router.route('/rating')
+    .patch(authProtect, rating)
 router.route('/:id')
     .get(getProduct)
     .patch(authProtect, isAdmin , updateProduct)

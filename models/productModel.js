@@ -47,10 +47,15 @@ var productSchema = new Schema({
     },
     ratings: [
         {
-        type: Number,
+        star: Number,
+        comment: String,
         postedBy: { type: Types.ObjectId, ref: "User" }
+        }
+    ],
+    totalRatings: {
+        type: String,
+        default: 0
     }
-],
 },{timestamps: true});
 
 //Export the model
