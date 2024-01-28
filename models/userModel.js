@@ -46,7 +46,8 @@ var userSchema = new Schema({
         ref: 'Address',
 
     }],
-    wishlist: [{
+    wishlist: [
+        {
         type: Types.ObjectId,
         ref: 'Product',
 

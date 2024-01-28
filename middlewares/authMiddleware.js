@@ -14,7 +14,7 @@ const authProtect = asyncWrapper(async(req, res, next) => {
     }
     try {
         const decodedToken = jwt.verify(token, process.env.SECRET_JWT)
-        const user = User.findById(decodedToken.id)
+        const user = await User.findById(decodedToken?.id)
         //console.log(decodedToken)
         req.user = user
         next()

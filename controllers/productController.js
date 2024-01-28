@@ -1,6 +1,7 @@
 const Product = require('../models/productModel')
 const asyncWrapper = require('express-async-handler')
 const  {StatusCodes} = require('http-status-codes')
+const User = require('../models/userModel')
 
 
 const createProduct = asyncWrapper(async (req, res) => {
@@ -76,11 +77,34 @@ const updateProduct = asyncWrapper(async (req, res) => {
 const deleteProduct = asyncWrapper(async (req, res) => {
     const id = req.body._id
     const deletedProduct = await Product.findOneAndDelete({id})
-    if (!deletedProduct) throw new Error("Can't update product, try again")
+    if (!deletedProduct) throw new Error("Can't delete product, try again")
     res.status(201).json({
         message: "Product deleted"
     })
     
+})
+
+const addToWishlist = asyncWrapper(async (req, res) => {
+    const {_id} = req.user
+    const {prodId} = req.body
+    const user = await User.findById(_id)
+    const alreadyAdded = user?.wishlist.find((id) => id.toString() === prodId)
+    if (alreadyAdded) {
+        let user = await User.findByIdAndUpdate(_id, {
+            $pull: { wishlist : prodId }, 
+        },{
+            new: true
+        })
+        res.json(user)
+    }else{
+        let user = await User.findByIdAndUpdate(_id, {
+            $push: { wishlist : prodId }, 
+        },{
+            new: true
+        })
+        res.json(user)
+    }
+
 })
 
 module.exports = {
@@ -88,5 +112,6 @@ module.exports = {
     getAllProducts,
     getProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    addToWishlist
 }
