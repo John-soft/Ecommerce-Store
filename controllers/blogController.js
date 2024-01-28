@@ -21,7 +21,7 @@ const getAllBlogs = asyncWrapper(async (req, res) => {
 
 const getBlog = asyncWrapper(async (req, res) => {
     const {id} = req.params
-    const blog = await Blog.findById(id)
+    const blog = await Blog.findById(id).populate('likes').populate('dislikes')
     await Blog.findByIdAndUpdate(id, 
         {$inc: {numViews : 1}},
          {new: true}
@@ -51,15 +51,15 @@ const deleteBlog = asyncWrapper(async (req, res) => {
 
 const likeBlog = asyncWrapper(async(req, res) => {
     const {blogId} = req.body
-    validateMongoId(blogId)
+    //validateMongoId(blogId)
     //find the blog you want to like 
     const blog = await Blog.findById(blogId)
     //find the logged in or current user
-    const currentUserId = req.user._id
+    const currentUserId = req.user.id
     //find if the user has liked the post
     const isLiked = blog.isLiked 
     //If it cannot read a property just add question mark (?) to it dislikes?.find()
-    const alreadyDisliked = blog.dislikes?.find((userId) => userId.toString() === currentUserId.toString())
+    const alreadyDisliked = blog?.dislikes?.find((userId) => userId.toString() === currentUserId.toString())
     if (alreadyDisliked) {
         const blog = await Blog.findByIdAndUpdate(blogId, {
             $pull: {dislikes: currentUserId},
@@ -87,15 +87,15 @@ const likeBlog = asyncWrapper(async(req, res) => {
 
 const dislikeBlog = asyncWrapper(async(req, res) => {
     const {blogId} = req.body
-    validateMongoId(blogId)
+    //validateMongoId(blogId)
     //find the blog you want to like 
     const blog = await Blog.findById(blogId)
     //find the logged in or current user
-    const currentUserId = req.user._id
+    const currentUserId = req.user.id
     //find if the user has liked the post
     const isDisliked = blog.isDisLiked 
     //If it cannot read a property just add question mark (?) to it dislikes?.find()
-    const alreadyliked = blog.likes?.find((userId) => userId.toString() === currentUserId.toString())
+    const alreadyliked = blog?.likes?.find((userId) => userId.toString() === currentUserId.toString())
     if (alreadyliked) {
         const blog = await Blog.findByIdAndUpdate(blogId, {
             $pull: {likes: currentUserId},
@@ -117,9 +117,7 @@ const dislikeBlog = asyncWrapper(async(req, res) => {
             }, {new: true})
             res.json(blog)
     }
-
 })
-
 
   
 module.exports = {
