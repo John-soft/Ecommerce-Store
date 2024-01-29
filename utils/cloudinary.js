@@ -6,19 +6,18 @@ cloudinary.config({
 });
 
 const cloudinaryUploadImage = async (fileToUpload) => {
-  const options = {
-    use_filename: true,
-    unique_filename: false,
-    overwrite: true,
-  };
-  f;
-  try {
-    const result = await cloudinary.uploader.upload(fileToUpload, options);
-    console.log(result);
-    return result.public_id;
-  } catch (error) {
-    console.error(error);
-  }
+  return new Promise((resolve) => {
+    cloudinary.uploader.upload(fileToUpload, (result) => {
+      resolve(
+        {
+          url: result.secure_url,
+        },
+        {
+          resource_type: "auto",
+        }
+      );
+    });
+  });
 };
 
 module.exports = cloudinaryUploadImage;
