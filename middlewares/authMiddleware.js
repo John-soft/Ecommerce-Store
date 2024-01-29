@@ -26,7 +26,7 @@ const authProtect = asyncWrapper(async(req, res, next) => {
 
 const isAdmin = asyncWrapper(async(req, res, next) => {
     const {email} = req.user
-    const user = await User.findOne(email)
+    const user = await User.findOne({email})
     if (user.role !== 'admin'){
     throw new Error('You are not an admin')
     }
